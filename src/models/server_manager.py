@@ -28,12 +28,12 @@ class ServerManager():
     def comm_mode(self):
         while True:
             os.system('cls||clear')
-            option = input("Ativar câmera?:\n(1)Não\n(2)Sim\n")
+            option = input("Ativar câmera?:\n(1)Sim\n(2)Não\n")
             option = int(option)
-            if option == 1:
+            if option == 2:
                 self.mode = 'chat'
                 break
-            elif option == 2:
+            elif option == 1:
                 self.mode = 'video'
                 break
     

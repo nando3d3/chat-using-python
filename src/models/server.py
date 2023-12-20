@@ -1,9 +1,7 @@
 import socket, cv2, pickle, struct
-import imutils
 import threading
 import pyshine as ps
 import cv2
-import signal
 from time import sleep
 
 class Server():
@@ -61,7 +59,6 @@ class Server():
         try:
             data = b""
             payload_size = struct.calcsize("Q")
-            
             while True:
                 while len(data) < payload_size:
                     packet = client_socket.recv(4*1024) # 4K
@@ -90,8 +87,50 @@ class Server():
             print(f"CLINET {addr} DISCONNECTED: {e}")
             pass
 
+            # while True:
+            #     print("SHOWING CLIENT")
+                
+            #     while True:
+            #         while len(data) < len(b"VIDEO:"):
+            #             print("RECEIVING DATA")
+            #             packet = client_socket.recv(4 * 1024)
+            #             if not packet:
+            #                 break
+            #             data += packet
+                        
+            #         if data.startswith(b"VIDEO:"):
+            #             print("VIDEO RECEIVED")
+
+            #             packed_msg_size = data[:payload_size]
+            #             data = data[payload_size:]
+            #             msg_size = struct.unpack("Q",packed_msg_size)[0]
+                        
+            #             while len(data) < msg_size:
+            #                 data += client_socket.recv(4*1024)
+            #             frame_data = data[:msg_size]
+            #             data  = data[msg_size:]
+            #             frame = pickle.loads(frame_data)
+            #             text  =  f"CLIENT: {addr}"
+            #             frame = ps.putBText(frame,text,10,10,vspace=10,hspace=1,font_scale=0.7,
+            #                     background_RGB=(255,0,0),text_RGB=(255,250,250))	
+            #             cv2.imshow(f"FROM {addr}",frame)
+            #             key = cv2.waitKey(1) & 0xFF
+            #             if key  == ord('q'):
+            #                 break
+            #         elif data.startswith(b"MESSAGE:"):
+            #             print("MESSAGE RECEIVED")
+            #             data = data[8:]
+            #             print(data)
+            #             break
+            #         else:
+            #             self.clients.remove(client_socket)
+            #             client_socket.close()
+
+        except Exception as e:
+            self.clients.remove(client_socket)
+            print(f"CLIENT {addr} DISCONNECTED: {e}")
+
     def receive(self):
-        
         
         while True:
             client, address = self.server.accept()
@@ -123,7 +162,7 @@ class Server():
                     if "COMM_MODE video" in mess_decode:
                         video_thread = threading.Thread(target=self.show_client, args=(client, address,))
                         video_thread.start()
-                
+                        
                     else:
                         thread = threading.Thread(target=self.handle_client, args=(client,))
                         thread.start()
@@ -144,7 +183,7 @@ class Server():
 def main():
     server = Server(
         host = "0.0.0.0",
-        qnt_users=2
+        qnt_users=10
     )
     
     server.start()
