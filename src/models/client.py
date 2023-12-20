@@ -2,7 +2,7 @@ import socket,cv2, pickle,struct
 import pyshine as ps
 import imutils
 import threading
-from server_manager import ServerManager
+from src.models.server_manager import ServerManager
 import os
 
 class Client(ServerManager):
@@ -52,6 +52,7 @@ class Client(ServerManager):
                     print("Commands can only be executed by the admin")
             else:
                 self.client.send(message.encode('ascii'))
+                print(message)
 
     def video(self):
         vid = cv2.VideoCapture(0)
@@ -84,16 +85,16 @@ class Client(ServerManager):
         receive_thread.start()
         write_thread = threading.Thread(target=self.write)
         write_thread.start()
+
             
         if self.client:
             self.client.send(f"COMM_MODE {self.mode}".encode('ascii'))
             
         if self.mode == 'video':
             video_thread = threading.Thread(target=self.video)
-            video_thread.start()
-                   
-        
-        
+            video_thread.start()    
+
+
 def main():
     Client().start()
     

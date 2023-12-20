@@ -7,7 +7,7 @@ class ServerManager():
     def enter_server(self):
             self.mode = None
             os.system('cls||clear')
-            with open('servers.json') as f:
+            with open('src/resources/servers.json') as f:
                 data = json.load(f)
             print('Servers: ', end="")
             for servers in data:
