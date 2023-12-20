@@ -1,7 +1,13 @@
 from flask import Flask, render_template, request, session, redirect, url_for
-from flask_socketio import join_room, leave_room, send, SocketIO
+from flask_socketio import join_room, leave_room, send, emit, SocketIO
 import random
 from string import ascii_uppercase
+
+import cv2
+import base64
+import io
+from PIL import Image
+import numpy as np
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "hjhjsdahhds"
@@ -99,5 +105,21 @@ def disconnect():
     send({"name": name, "message": "has left the room"}, to=room)
     print(f"{name} has left the room {room}")
 
+@socketio.on('image')
+def image(data_image):
+    sbuf = io.StringIO()
+    sbuf.write(data_image)
+    b = io.BytesIO(base64.b64decode(data_image))
+    pimg = Image.open(b)
+
+    frame = cv2.cvtColor(np.array(pimg), cv2.COLOR_RGB2BGR)
+    frame = cv2.flip(frame, flipCode=0)
+    imgencode = cv2.imencode('.jpg', frame)[1]
+
+    stringData = base64.b64encode(imgencode).decode('utf-8')
+    b64_src = 'data:image/jpeg;base64,'
+    stringData = b64_src + stringData
+    emit('response_back', stringData)
+
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
