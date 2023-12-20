@@ -1,4 +1,5 @@
 {% extends 'base.html' %} {% block content %}
+<div id="usersVideoContainer"></div>
 <div id="videoContainer">
     <canvas id="canvasOutput"></canvas>
     <video autoplay="true" id="videoElement"></video>
@@ -53,80 +54,127 @@
     message.value = "";
   };
 </script>
-<script>
-    function capture(video, scaleFactor) {
-        if(scaleFactor == null){
-            scaleFactor = 1;
+<script type="text/javascript">
+    var localStream;
+    var peerConnections = {}; // Mapa para armazenar as conexões peer-to-peer
+  
+    // Solicitando acesso à webcam
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        document.getElementById('videoElement').srcObject = stream;
+        localStream = stream;
+      })
+      .catch(err => console.log(err));
+  
+    socketio.on('new_user_joined', data => {
+      setupPeerConnection(data.name);
+      requestMediaStream(data.name);
+    });
+  
+    socketio.on('webrtc_offer', (data) => {
+      handleOffer(data.offer, data.name);
+    });
+  
+    socketio.on('webrtc_answer', (data) => {
+      peerConnections[data.name].setRemoteDescription(new RTCSessionDescription(data.answer));
+    });
+  
+    socketio.on('webrtc_ice_candidate', (data) => {
+      var candidate = new RTCIceCandidate(data.candidate);
+      peerConnections[data.name].addIceCandidate(candidate);
+    });
+  
+    function setupPeerConnection(userName) {
+      var peerConnection = new RTCPeerConnection(/* Configurações do ICE server */);
+      peerConnections[userName] = peerConnection;
+  
+      peerConnection.ontrack = function (event) {
+        var videoContainer = document.createElement('video');
+        videoContainer.autoplay = true;
+        videoContainer.srcObject = event.streams[0];
+        document.getElementById('usersVideoContainer').appendChild(videoContainer);
+      };
+  
+      peerConnection.onicecandidate = function (event) {
+        if (event.candidate) {
+          socketio.emit('webrtc_ice_candidate', { 
+            target: userName, 
+            candidate: event.candidate 
+          });
         }
-        var w = video.videoWidth * scaleFactor;
-        var h = video.videoHeight * scaleFactor;
-        var canvas = document.createElement('canvas');
-            canvas.width  = w;
-            canvas.height = h;
-        var ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, w, h);
-        return canvas;
-    } 
-
-    var socket = io('http://localhost:5000');
-    socket.on('connect', function(){
-        console.log("Connection has been succesfully established with socket.", socket.connected)
-    });
-    const video = document.querySelector("#videoElement");
-    video.width = 500; 
-    video.height = 375; ;
-    if (navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function (stream) {
-            video.srcObject = stream;
-            video.play();
+      };
+  
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+    }
+  
+    function requestMediaStream(userName) {
+      peerConnections[userName].createOffer()
+        .then(offer => {
+          return peerConnections[userName].setLocalDescription(offer);
         })
-        .catch(function (err0r) {
-            console.log(err0r)
-            console.log("Something went wrong!");
-        });
+        .then(() => {
+          socketio.emit('webrtc_offer', { 
+            target: userName, 
+            offer: peerConnections[userName].localDescription 
+          });
+        })
+        .catch(err => console.log(err));
     }
-    const FPS = 22;
-    setInterval(() => {
-        var type = "image/jpg"
-        var video_element = document.getElementById("videoElement")
-        var frame = capture(video_element, 1)
-        var data = frame.toDataURL(type);
-        data = data.replace('data:' + type + ';base64,', '');
-        socket.emit('image', data);
-    }, 10000/FPS);
-
-
-    socket.on('response_back', function(image){
-        const image_id = document.getElementById('image');
-        console.log(image)
-        image_id.src = image;
-    });
-</script>
-<script>
-    // Função para posicionar a div de vídeo aleatoriamente na tela
-    function randomizeVideoPosition() {
-        var videoContainer = document.getElementById('videoContainer');
-
-        // Altura e largura da janela do navegador
-        var windowWidth = window.innerWidth;
-        var windowHeight = window.innerHeight;
-
-        // Gerar valores aleatórios para as posições top e left
-        var randomTop = Math.floor(Math.random() * windowHeight);
-        var randomLeft = Math.floor(Math.random() * windowWidth);
-
-        // Definir o estilo CSS para a posição aleatória
-        videoContainer.style.position = 'absolute';
-        videoContainer.style.top = randomTop + 'px';
-        videoContainer.style.left = randomLeft + 'px';
+  
+    function handleOffer(offer, userName) {
+      peerConnections[userName].setRemoteDescription(new RTCSessionDescription(offer))
+        .then(() => {
+          return peerConnections[userName].createAnswer();
+        })
+        .then(answer => {
+          return peerConnections[userName].setLocalDescription(answer);
+        })
+        .then(() => {
+          socketio.emit('webrtc_answer', { 
+            target: userName, 
+            answer: peerConnections[userName].localDescription 
+          });
+        })
+        .catch(err => console.log(err));
     }
+    const iceServers = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    // Adicione servidores TURN aqui se necessário
+  ]
+};
 
-    // Chama a função para posicionar a div de vídeo aleatoriamente na tela
-    window.onload = function() {
-        randomizeVideoPosition();
-    };
-</script>
+function setupPeerConnection(userName) {
+  var peerConnection = new RTCPeerConnection(iceServers);
+  peerConnections[userName] = peerConnection;
+
+  // Adicionando tracks locais ao peer connection
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  // Lida com o recebimento de novos streams remotos
+  peerConnection.ontrack = event => {
+    var videoContainer = document.createElement('video');
+    videoContainer.autoplay = true;
+    videoContainer.srcObject = event.streams[0];
+    document.getElementById('usersVideoContainer').appendChild(videoContainer);
+  };
+
+  // Lidando com candidatos ICE
+  peerConnection.onicecandidate = event => {
+    if (event.candidate) {
+      socketio.emit('webrtc_ice_candidate', { 
+        target: userName, 
+        candidate: event.candidate 
+      });
+    }
+  };
+}
+  </script>
+  
 {% for msg in messages %}
 <script type="text/javascript">
   createMessage("{{msg.name}}", "{{msg.message}}");

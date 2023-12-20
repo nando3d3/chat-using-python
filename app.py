@@ -105,21 +105,25 @@ def disconnect():
     send({"name": name, "message": "has left the room"}, to=room)
     print(f"{name} has left the room {room}")
 
-@socketio.on('image')
-def image(data_image):
-    sbuf = io.StringIO()
-    sbuf.write(data_image)
-    b = io.BytesIO(base64.b64decode(data_image))
-    pimg = Image.open(b)
+@socketio.on('join_video_room')
+def join_video_room(data):
+    room = session.get("room")
+    join_room(room)
+    emit('new_user_joined', {'name': session.get('name')}, to=room, broadcast=True, include_self=False)
 
-    frame = cv2.cvtColor(np.array(pimg), cv2.COLOR_RGB2BGR)
-    frame = cv2.flip(frame, flipCode=0)
-    imgencode = cv2.imencode('.jpg', frame)[1]
+@socketio.on('webrtc_offer')
+def handle_webrtc_offer(data):
+    emit('webrtc_offer', data, to=data['target'])
 
-    stringData = base64.b64encode(imgencode).decode('utf-8')
-    b64_src = 'data:image/jpeg;base64,'
-    stringData = b64_src + stringData
-    emit('response_back', stringData)
+@socketio.on('webrtc_answer')
+def handle_webrtc_answer(data):
+    emit('webrtc_answer', data, to=data['target'])
+
+@socketio.on('webrtc_ice_candidate')
+def handle_webrtc_ice_candidate(data):
+    emit('webrtc_ice_candidate', data, to=data['target'])
+
+
 
 if __name__ == "__main__":
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
