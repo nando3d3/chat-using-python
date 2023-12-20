@@ -2,3 +2,7 @@ opencv-contrib-python
 pyshine
 numpy
 imutils
+sounddevice
+matplotlib
+soundfile
+keras
