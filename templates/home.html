@@ -1,0 +1,23 @@
+{% extends 'base.html' %} {% block content %}
+<form method="post" class="buttons">
+  <h3>Salas de Chat</h3>
+  <div>
+    <label>Nome:</label>
+    <input type="text" placeholder="Pick a name!" name="name" value="{{name}}" />
+  </div>
+  <div class="join">
+    <label>Escolha um tema:</label>
+    <select name="theme">
+      {% for theme in themes %}
+      <option value="{{ theme }}">{{ theme }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" name="join">Entre em uma sala</button>
+  </div>
+  {% if error %}
+  <ul>
+    <li>{{error}}</li>
+  </ul>
+  {% endif %}
+</form>
+{% endblock %}

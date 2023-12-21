@@ -1,0 +1,182 @@
+{% extends 'base.html' %} {% block content %}
+<div id="usersVideoContainer"></div>
+<div id="videoContainer">
+    <canvas id="canvasOutput"></canvas>
+    <video autoplay="true" id="videoElement"></video>
+</div>
+
+<div class = 'video'>
+    <img id="image">
+</div>
+<div class="message-box">
+  <h2>Sala: {{code}}</h2>
+  <div class="messages" id="messages"></div>
+  <div class="inputs">
+    <input
+      type="text"
+      rows="3"
+      placeholder="Message"
+      name="message"
+      id="message"
+    />
+    <button type="button" name="send" id="send-btn" onClick="sendMessage()">
+      Enviar
+    </button>
+  </div>
+</div>
+<script type="text/javascript">
+  var socketio = io();
+
+  const messages = document.getElementById("messages");
+
+  const createMessage = (name, msg) => {
+    const content = `
+    <div class="text">
+        <span>
+            <strong>${name}</strong>: ${msg}
+        </span>
+        <span class="muted">
+            ${new Date().toLocaleString()}
+        </span>
+    </div>
+    `;
+    messages.innerHTML += content;
+  };
+
+  socketio.on("message", (data) => {
+    createMessage(data.name, data.message);
+  });
+
+  const sendMessage = () => {
+    const message = document.getElementById("message");
+    if (message.value == "") return;
+    socketio.emit("message", { data: message.value });
+    message.value = "";
+  };
+</script>
+<script type="text/javascript">
+    var localStream;
+    var peerConnections = {}; // Mapa para armazenar as conexões peer-to-peer
+  
+    // Solicitando acesso à webcam
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        document.getElementById('videoElement').srcObject = stream;
+        localStream = stream;
+      })
+      .catch(err => console.log(err));
+  
+    socketio.on('new_user_joined', data => {
+      setupPeerConnection(data.name);
+      requestMediaStream(data.name);
+    });
+  
+    socketio.on('webrtc_offer', (data) => {
+      handleOffer(data.offer, data.name);
+    });
+  
+    socketio.on('webrtc_answer', (data) => {
+      peerConnections[data.name].setRemoteDescription(new RTCSessionDescription(data.answer));
+    });
+  
+    socketio.on('webrtc_ice_candidate', (data) => {
+      var candidate = new RTCIceCandidate(data.candidate);
+      peerConnections[data.name].addIceCandidate(candidate);
+    });
+  
+    function setupPeerConnection(userName) {
+      var peerConnection = new RTCPeerConnection(/* Configurações do ICE server */);
+      peerConnections[userName] = peerConnection;
+  
+      peerConnection.ontrack = function (event) {
+        var videoContainer = document.createElement('video');
+        videoContainer.autoplay = true;
+        videoContainer.srcObject = event.streams[0];
+        document.getElementById('usersVideoContainer').appendChild(videoContainer);
+      };
+  
+      peerConnection.onicecandidate = function (event) {
+        if (event.candidate) {
+          socketio.emit('webrtc_ice_candidate', { 
+            target: userName, 
+            candidate: event.candidate 
+          });
+        }
+      };
+  
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+    }
+  
+    function requestMediaStream(userName) {
+      peerConnections[userName].createOffer()
+        .then(offer => {
+          return peerConnections[userName].setLocalDescription(offer);
+        })
+        .then(() => {
+          socketio.emit('webrtc_offer', { 
+            target: userName, 
+            offer: peerConnections[userName].localDescription 
+          });
+        })
+        .catch(err => console.log(err));
+    }
+  
+    function handleOffer(offer, userName) {
+      peerConnections[userName].setRemoteDescription(new RTCSessionDescription(offer))
+        .then(() => {
+          return peerConnections[userName].createAnswer();
+        })
+        .then(answer => {
+          return peerConnections[userName].setLocalDescription(answer);
+        })
+        .then(() => {
+          socketio.emit('webrtc_answer', { 
+            target: userName, 
+            answer: peerConnections[userName].localDescription 
+          });
+        })
+        .catch(err => console.log(err));
+    }
+    const iceServers = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    // Adicione servidores TURN aqui se necessário
+  ]
+};
+
+function setupPeerConnection(userName) {
+  var peerConnection = new RTCPeerConnection(iceServers);
+  peerConnections[userName] = peerConnection;
+
+  // Adicionando tracks locais ao peer connection
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  // Lida com o recebimento de novos streams remotos
+  peerConnection.ontrack = event => {
+    var videoContainer = document.createElement('video');
+    videoContainer.autoplay = true;
+    videoContainer.srcObject = event.streams[0];
+    document.getElementById('usersVideoContainer').appendChild(videoContainer);
+  };
+
+  // Lidando com candidatos ICE
+  peerConnection.onicecandidate = event => {
+    if (event.candidate) {
+      socketio.emit('webrtc_ice_candidate', { 
+        target: userName, 
+        candidate: event.candidate 
+      });
+    }
+  };
+}
+  </script>
+  
+{% for msg in messages %}
+<script type="text/javascript">
+  createMessage("{{msg.name}}", "{{msg.message}}");
+</script>
+{% endfor %} {% endblock %}

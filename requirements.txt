@@ -1,8 +1,5 @@
-opencv-contrib-python
-pyshine
-numpy
-imutils
-sounddevice
-matplotlib
-soundfile
-keras
+Flask==3.0.0
+Flask_SocketIO==5.3.6
+numpy==1.26.2
+opencv_python==4.8.1.78
+Pillow==10.1.0
