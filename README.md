@@ -35,7 +35,7 @@ Agora você deve ver a interface da aplicação de chat. Siga as instruções na
 
 ## Link para a Apresentação
 
-[Video](https://discord.com/channels/761008464880992256/1164367405045264384/1187211293313212538)
+[Video](https://youtu.be/pjMi5ClaQ1M)
 
 
 
