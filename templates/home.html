@@ -3,18 +3,17 @@
   <h3>Salas de Chat</h3>
   <div>
     <label>Nome:</label>
-    <input
-      type="text"
-      placeholder="Pick a name!"
-      name="name"
-      value="{{name}}"
-    />
+    <input type="text" placeholder="Pick a name!" name="name" value="{{name}}" />
   </div>
   <div class="join">
-    <input type="text" placeholder="Room Code" name="code" value="{{code}}" />
+    <label>Escolha um tema:</label>
+    <select name="theme">
+      {% for theme in themes %}
+      <option value="{{ theme }}">{{ theme }}</option>
+      {% endfor %}
+    </select>
     <button type="submit" name="join">Entre em uma sala</button>
   </div>
-  <button type="submit" name="create" class="create-btn">Crie uma sala</button>
   {% if error %}
   <ul>
     <li>{{error}}</li>
