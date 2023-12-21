@@ -1,49 +1,36 @@
-# Python Chat 🐍 : A Python-Based Chat Room
+# Instruções de Execução para a Aplicação de Chat em Flask
+
+Este documento fornece um guia passo a passo para configurar e executar a aplicação de chat desenvolvida em Flask, que inclui funcionalidades de chat de texto. Abaixo estão as instruções detalhadas para instalar as dependências necessárias e executar a aplicação.
+
+## Pré-requisitos
+Antes de começar, certifique-se de ter o seguinte software instalado em seu sistema:
+- Python 3.x
+- pip (gerenciador de pacotes do Python)
+
+## Passos para Execução
 
 
-This is an advanced Python-based Secure Chat room. The project is entirely based on the Socket Progamming; done using Python. A server is set to the listening mode, with a specific IP Address and Port number (that can be edited in the script) and clients are made to connect to the server, after which they are promopted to enter a nickname. The messages are then broadcasted to all the clients present. 
-
-### 👉 Introduction
-
-#### 👉 Sockets
-<b> Sockets </b> and the socket API are used to send messages across a network. They provide a form of inter-process communication (IPC). The network can be a logical, local network to the computer, or one that’s physically connected to an external network, with its own connections to other networks. The obvious example is the Internet, which you connect to via your ISP. <br><br>
-<img align="center" height=300px src=https://github.com/IamLucif3r/Chat-On/blob/main/assets/Python-Sockets-Tutorial_Watermarked.webp> <br>
-Image Credit:[Real Python](https://realpython.com/python-sockets/)
-
-#### 👉 TCP Socket
-In the diagram below, given the sequence of socket API calls and data flow for TCP:
-<br><br>
-<img align="center" src=https://github.com/IamLucif3r/Chat-On/blob/main/assets/Screenshot%20at%202021-05-21%2010-47-40.png height=500px>
-
-## 👉 Environment Setup
-
-1. Setup python 3.10.x on your system.
-
-2. Create a virtual environment using the following command:
-``` shell
-python3 -m venv venv
+### 1. Instalar as Dependências
+Para instalar as dependências necessárias, execute o seguinte comando no terminal:
 ```
-3. Activate the virtual environment using the following command:
-``` shell
-source venv/bin/activate
+pip install -r requirements.txt
 ```
-4. Install the requirements using the following command:
-``` shell
-pip3 install -r requirements.txt
+Isso instalará todas as bibliotecas e pacotes necessários listados no arquivo `requirements.txt`.
+
+### 2. Executar a Aplicação
+Após a instalação das dependências, você pode iniciar a aplicação com o comando:
 ```
-
-## 👉 Usage
-
-1. We will have to start our Server first.
-``` shell
-python3 main_server.py
+python app.py
 ```
-<b>Note: </b> Before running the server, make sure to edit the IP address and Port number. By default it is running on Localhost:5555 <br><br>
-2. Run the Client file, to start the conversation. 
-``` Shell
-python3 main_client.py
+Isso iniciará o servidor Flask localmente.
+
+### 3. Acessar a Aplicação
+Com o servidor em execução, abra um navegador e acesse:
 ```
-<br>
-3. Now Enter a nickname and start your chatting. 
+http://localhost:5000
+```
+Agora você deve ver a interface da aplicação de chat. Siga as instruções na tela para usar a aplicação.
 
-
+## Notas Adicionais
+- Certifique-se de que nenhuma outra aplicação esteja utilizando a porta 5000. Se necessário, você pode alterar a porta no arquivo `app.py`.
+- Para qualquer problema ou erro durante a instalação ou execução, verifique as mensagens de erro no terminal e consulte a documentação das respectivas bibliotecas ou do Flask.
